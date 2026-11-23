@@ -1,0 +1,6 @@
+# 文本统一按 LF 存储；Windows 批处理必须留 CRLF，否则 cmd 解析出错
+* text=auto
+*.bat text eol=crlf
+*.png binary
+*.ico binary
+*.mp4 binary
