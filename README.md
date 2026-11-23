@@ -1,10 +1,19 @@
 # RTSP 摄像头流模拟器
 
+[![Release](https://img.shields.io/github/v/release/lp2924/rtsp-cam-sim?label=release&color=4B4FE0)](https://github.com/lp2924/rtsp-cam-sim/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/lp2924/rtsp-cam-sim/total?label=downloads&color=41C99B)](https://github.com/lp2924/rtsp-cam-sim/releases)
+[![License](https://img.shields.io/github/license/lp2924/rtsp-cam-sim?color=E2AE55)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0F7BD4)](https://github.com/lp2924/rtsp-cam-sim/releases/latest)
+
+**不想装 Python？直接下 exe（已内置 ffmpeg，免安装）：**
+
+[![Download for Windows](https://img.shields.io/badge/%E4%B8%8B%E8%BD%BD-Windows%20exe-4B4FE0?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/lp2924/rtsp-cam-sim/releases/latest)
+
 把本地视频文件变成一台「虚拟摄像机」：按主流监控厂商的 **RTSP 路径** 和 **SDP 格式** 对外发布，
 给需要 RTSP 流的平台、客户端、SDK 做接入测试。
 
 - 平台：Windows 10/11
-- 运行时：Python 3.10+、ffmpeg（用于把任意格式转成 H.264/H.265）
+- 运行方式：**免安装 exe（内置 ffmpeg）**，或源码运行（Python 3.10+、ffmpeg）
 - 界面：PySide6
 - 协议栈：自研 RTSP 服务端（不依赖第三方流媒体服务器，路径与 SDP 可完全按厂商定制）
 
@@ -128,17 +137,51 @@
 
 ## 二、快速开始
 
+### 方式一：下载 exe（推荐，免安装）
+
+到 [Releases](https://github.com/lp2924/rtsp-cam-sim/releases/latest) 下载
+`RtspCamSim-v1.0.0-win64.exe`（约 100 MB），双击运行即可。
+
+- **已内置 ffmpeg / ffprobe**，不用装 Python，也不用单独装 ffmpeg
+- 未做代码签名：首次运行若被 SmartScreen 拦下，点「更多信息 → 仍要运行」
+- 配置落点：优先读写 **exe 同目录** 的 `config.json`；该目录不可写（比如放进
+  `C:\Program Files`）时自动退回 `%APPDATA%\RtspCamSim\config.json`
+- 想核对下载是否完整：
+
 ```bat
-:: 0) 克隆（也可以直接下载 ZIP 解压）
+certutil -hashfile RtspCamSim-v1.0.0-win64.exe SHA256
+```
+
+  每个 Release 页面都记录了对应版本的 SHA256，比对一致即可。
+
+### 方式二：从源码运行
+
+```bat
+:: 克隆（也可以直接下载 ZIP 解压）
 git clone https://github.com/lp2924/rtsp-cam-sim.git
 cd rtsp-cam-sim
 
-:: 1) 首次运行：双击 启动.bat，会自动创建 .venv 并安装 PySide6
+:: 首次运行：自动创建 .venv 并安装 PySide6
 启动.bat
 ```
 
-> 还需要系统里能调用的 **ffmpeg**（`ffmpeg -version` 有输出即可）。装好但不在 PATH 里，
-> 到「设置」里手动指定 `ffmpeg.exe` 路径。
+> 源码运行需要 Python 3.10+，以及系统里能调用的 **ffmpeg**（`ffmpeg -version` 有输出即可）。
+> 装了但不在 PATH 里，到「设置」里手动指定 `ffmpeg.exe` 路径。
+
+### 自己打包 exe
+
+```bat
+.venv\Scripts\python.exe -m pip install pyinstaller
+set FFMPEG_BIN_DIR=D:\ffmpeg-6.0-essentials_build\bin
+.venv\Scripts\python.exe -m PyInstaller --noconfirm build\app.spec
+```
+
+- 打包配置在 `build/app.spec`：单文件（onefile）、无控制台窗口，内置 `ffmpeg.exe` /
+  `ffprobe.exe`（不打 `ffplay.exe`），排除 Qt WebEngine / Quick / Multimedia 等用不到的模块
+- `FFMPEG_BIN_DIR` 不设时默认找 `D:\ffmpeg-6.0-essentials_build\bin`，换路径记得改
+- spec 里会主动剔除从 PATH 夹带进来的 `ucrtbase.dll` 与 `api-ms-win-*.dll`：
+  包内 CRT 与系统 CRT 混用会造成 `0xc0000409` fail-fast 崩溃，**这段过滤不要删**
+- 产物：`dist\RtspCamSim.exe`
 
 界面操作顺序：
 
@@ -335,6 +378,7 @@ ffprobe -rtsp_transport tcp rtsp://192.168.1.146:8554/Streaming/Channels/102
 ```
 视频转RTSP流/
 ├─ 启动.bat                  一键启动（首次自动建虚拟环境）
+├─ build/app.spec            PyInstaller 打包配置（onefile + 内置 ffmpeg/ffprobe）
 ├─ requirements.txt
 ├─ config.json               运行后生成：监听配置 + 流列表（含本机 IP，已 gitignore）
 ├─ samples/demo_720p.mp4     自带测试视频（ffmpeg 生成的动态测试图）
